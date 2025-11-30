@@ -29,7 +29,7 @@ function Wedge({ targetPos, hovered }: { targetPos: Vector3; hovered: boolean })
 }
 
 export default function Cursor3D() {
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const [, setMousePos] = useState({ x: 0, y: 0 })
   const [hovered, setHovered] = useState(false)
   const targetPos = useRef(new Vector3(0, 0, 0))
   const [reducedMotion, setReducedMotion] = useState(false)

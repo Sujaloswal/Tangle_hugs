@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import CursiveLogo from './CursiveLogo'
 import LogoImage from './LogoImage'
 import CartDrawer from './CartDrawer'
 
