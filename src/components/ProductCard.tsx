@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 
 interface ProductCardProps {
   product: {
@@ -15,6 +16,16 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart()
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  const handleAddToCart = () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    addToCart(product)
+  }
 
   return (
     <motion.div
@@ -45,7 +56,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => addToCart(product)}
+            onClick={handleAddToCart}
             disabled={product.stock === 0}
             className="bg-blush text-white px-5 py-2.5 rounded-full hover:bg-blush-dark transition-all shadow-soft disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
