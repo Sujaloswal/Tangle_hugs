@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import { motion } from 'framer-motion'
 
 export default function ProductDetail() {
@@ -10,10 +11,16 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [reviews, setReviews] = useState<any[]>([])
+  const [newReview, setNewReview] = useState({ rating: 5, comment: '' })
+  const [submitting, setSubmitting] = useState(false)
   const { addToCart } = useCart()
+  const { user } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetchProduct()
+    fetchReviews()
   }, [id])
 
   async function fetchProduct() {
@@ -29,12 +36,49 @@ export default function ProductDetail() {
     setLoading(false)
   }
 
+  async function fetchReviews() {
+    const { data } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('product_id', id)
+      .order('created_at', { ascending: false })
+    
+    if (data) setReviews(data)
+  }
+
   const handleAddToCart = () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
     if (product) {
       for (let i = 0; i < quantity; i++) {
         addToCart(product)
       }
     }
+  }
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) {
+      navigate('/login')
+      return
+    }
+
+    setSubmitting(true)
+    const { error } = await supabase.from('reviews').insert({
+      product_id: id,
+      user_id: user.id,
+      rating: newReview.rating,
+      comment: newReview.comment,
+      user_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous'
+    })
+
+    if (!error) {
+      setNewReview({ rating: 5, comment: '' })
+      fetchReviews()
+    }
+    setSubmitting(false)
   }
 
   if (loading) {
@@ -150,6 +194,81 @@ export default function ProductDetail() {
             >
               {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
             </motion.button>
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="max-w-4xl mx-auto mt-16">
+          <h2 className="text-4xl font-cursive text-yarn mb-8">Customer Reviews</h2>
+
+          {/* Add Review Form */}
+          {user && (
+            <form onSubmit={handleSubmitReview} className="glass-effect p-6 rounded-3xl mb-8">
+              <h3 className="text-xl font-semibold text-yarn mb-4">Write a Review</h3>
+              <div className="mb-4">
+                <label className="block text-yarn font-medium mb-2">Rating</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNewReview({ ...newReview, rating: star })}
+                      className="text-3xl transition-transform hover:scale-110"
+                    >
+                      {star <= newReview.rating ? '⭐' : '☆'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-yarn font-medium mb-2">Your Review</label>
+                <textarea
+                  value={newReview.comment}
+                  onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                  required
+                  rows={4}
+                  className="w-full px-4 py-3 border-2 border-blush/30 rounded-2xl focus:outline-none focus:border-blush transition-all glass-effect resize-none"
+                  placeholder="Share your experience with this product..."
+                />
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={submitting}
+                className="bg-blush text-white px-8 py-3 rounded-full hover:bg-blush-dark transition-all shadow-soft font-semibold disabled:opacity-50"
+              >
+                {submitting ? 'Submitting...' : 'Submit Review'}
+              </motion.button>
+            </form>
+          )}
+
+          {/* Reviews List */}
+          <div className="space-y-4">
+            {reviews.length === 0 ? (
+              <p className="text-yarn-light text-center py-8">No reviews yet. Be the first to review!</p>
+            ) : (
+              reviews.map((review) => (
+                <div key={review.id} className="glass-effect p-6 rounded-3xl">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-semibold text-yarn">{review.user_name}</p>
+                      <div className="flex gap-1 mt-1">
+                        {[...Array(5)].map((_, i) => (
+                          <span key={i} className="text-lg">
+                            {i < review.rating ? '⭐' : '☆'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-yarn-light text-sm">
+                      {new Date(review.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <p className="text-yarn-light">{review.comment}</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

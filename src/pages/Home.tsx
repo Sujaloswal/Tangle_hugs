@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import ProductCard from '../components/ProductCard'
+import TestimonialsScroll from '../components/TestimonialsScroll'
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([])
@@ -125,6 +126,9 @@ export default function Home() {
           </motion.div>
         </section>
       )}
+
+      {/* Testimonials Scroll */}
+      <TestimonialsScroll />
 
       {/* Why Choose Us */}
       <section className="py-24 mt-12">
